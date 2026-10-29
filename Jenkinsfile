@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -7,11 +8,6 @@ pipeline {
 
     tools {
         maven '3.9.11'
-    }
-
-    environment {
-        NEXUS_RELEASE_REPO_ID = 'nexus-releases'
-        NEXUS_SNAPSHOT_REPO_ID = 'nexus-snapshots'
     }
 
     stages {
@@ -46,22 +42,27 @@ pipeline {
                     usernameVariable: 'NEXUS_USER',
                     passwordVariable: 'NEXUS_PASSWORD'
                 )]) {
-                    writeFile file: 'nexus-settings.xml', text: """<settings>
+                    sh '''
+                        set +x
+                        umask 077
+                        cat > nexus-settings.xml <<EOF
+<settings>
     <servers>
         <server>
-            <id>${NEXUS_RELEASE_REPO_ID}</id>
-            <username>${NEXUS_USER}</username>
-            <password>${NEXUS_PASSWORD}</password>
+            <id>nexus-releases</id>
+            <username>$NEXUS_USER</username>
+            <password>$NEXUS_PASSWORD</password>
         </server>
         <server>
-            <id>${NEXUS_SNAPSHOT_REPO_ID}</id>
-            <username>${NEXUS_USER}</username>
-            <password>${NEXUS_PASSWORD}</password>
+            <id>nexus-snapshots</id>
+            <username>$NEXUS_USER</username>
+            <password>$NEXUS_PASSWORD</password>
         </server>
     </servers>
-</settings>"""
-
-                    sh 'mvn deploy -DskipTests -s nexus-settings.xml'
+</settings>
+EOF
+                        mvn deploy -DskipTests -s nexus-settings.xml
+                    '''
                 }
             }
         }
